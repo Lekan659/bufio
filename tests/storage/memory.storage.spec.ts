@@ -1,7 +1,7 @@
 import { MemoryStorage } from "../../src/storage";
 import { expect } from "chai";
 import { faker } from "@faker-js/faker";
-import { multiply } from "../helpers";
+import { multiply } from "../unit/helpers";
 
 type RecordType = { id: number; value: string };
 
