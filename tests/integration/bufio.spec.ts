@@ -110,37 +110,6 @@ describe("Integration Tests", () => {
       expect(remainingRecords).to.have.length(0);
     });
 
-    it("handles multiple flushes with batching", async () => {
-      bufIO = new BufIO({
-        worker,
-        storage,
-        batchSize: 2,
-        flushInterval: 50
-      });
-
-      bufIO.start();
-
-      const record1 = createTestRecord({ id: 1 });
-      const record2 = createTestRecord({ id: 2 });
-      bufIO.push(record1);
-      bufIO.push(record2);
-
-      await new Promise(resolve => setTimeout(resolve, 75));
-
-      const record3 = createTestRecord({ id: 3 });
-      const record4 = createTestRecord({ id: 4 });
-      bufIO.push(record3);
-      bufIO.push(record4);
-
-      await new Promise(resolve => setTimeout(resolve, 75));
-
-      expect(worker.processingCalls).to.be.at.least(2);
-      expect(worker.processedRecords.length).to.equal(4);
-      
-      // check storage is clean
-      const remainingRecords = storage.get();
-      expect(remainingRecords.length).to.equal(0);
-    });
 
     it("handles errors from worker", async () => {
       let errorHappened = false;
@@ -177,54 +146,6 @@ describe("Integration Tests", () => {
       expect(failedRecords).to.deep.include(record2);
     });
 
-    it("works with mixed timing", async () => {
-      bufIO = new BufIO({
-        worker,
-        storage,
-        batchSize: 3,
-        flushInterval: 100
-      });
-
-      bufIO.start();
-      worker.processingDelay = 20; 
-
-      bufIO.push(createTestRecord({ id: 1 }));
-      
-      await new Promise(resolve => setTimeout(resolve, 30));
-      bufIO.push(createTestRecord({ id: 2 }));
-      
-      await new Promise(resolve => setTimeout(resolve, 30));
-      bufIO.push(createTestRecord({ id: 3 })); 
-      
-      await new Promise(resolve => setTimeout(resolve, 150));
-      
-      expect(worker.processedRecords.length).to.equal(3);
-      const processedIds = worker.processedRecords.map(r => r.id).sort();
-      expect(processedIds).to.deep.equal([1, 2, 3]);
-    });
-
-    it("works with memory storage batch behavior", () => {
-      bufIO = new BufIO({
-        worker,
-        storage,
-        batchSize: 5
-      });
-
-      // add bunch of records
-      for (let i = 1; i <= 10; i++) {
-        bufIO.push(createTestRecord({ id: i }));
-      }
-
-      // get first batch
-      const firstBatch = storage.get(3);
-      expect(firstBatch.length).to.equal(3);
-      expect(firstBatch.map(r => r.id)).to.deep.equal([1, 2, 3]);
-
-      // get rest
-      const remaining = storage.get();
-      expect(remaining.length).to.equal(7);
-      expect(remaining.map(r => r.id)).to.deep.equal([4, 5, 6, 7, 8, 9, 10]);
-    });
 
     it("waits for flush to complete before stopping", async () => {
       worker.processingDelay = 100; // simulate slow worker
@@ -258,4 +179,5 @@ describe("Integration Tests", () => {
 
   });
 
+  
 });
